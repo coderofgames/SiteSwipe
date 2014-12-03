@@ -37,7 +37,7 @@ function grab_element($original_url, $dom, $tagname, $dir_name, $root_dir  )
         if( $tagname == "link") $attr = "href";
         if( $tagname == "img") $attr = "src";
         if( $tagname == "script") $attr = "src";
-        
+        echo "<br>Getting attribute: ".$attr.", from tag: ".$tagname." ;";
         $str=$img->getAttribute($attr);
         
         if( $str == "" )continue;
@@ -48,6 +48,8 @@ function grab_element($original_url, $dom, $tagname, $dir_name, $root_dir  )
         $accum_path = "";
 
         $saved_url = $str;
+        
+         
         
         // IS THIS AN ABSOLUTE URL OR RELATIVE ?
         if ((substr($str, 0, 7) == 'http://') || (substr($str, 0, 8) == 'https://')) {
@@ -80,25 +82,55 @@ function grab_element($original_url, $dom, $tagname, $dir_name, $root_dir  )
             
 
         }
+
         else {  
             
-            $arr = multiexplode("/", $str);
+            $arr = explode("/", $str);
             print_r($arr);
             echo "</br>";
             echo $arr_count = count($arr);
             // walk through the path array creating directories
-            $accum_path = $root_dir . "/" . $dir_name . "/";
+            $accum_path = $root_dir ;
      
-                for( $d=1; $d < $arr_count-1; $d++ )
-                {
-                    $accum_path .= $arr[$d]."/";
-                    mkdir($accum_path);
-                }
+            for( $d=0; $d < $arr_count-1; $d++ )
+            {
+                $accum_path .= $arr[$d]."/";
+                mkdir($accum_path);
+            }
 
             $file_name = $arr[$arr_count-1];
             $accum_path .= $file_name;
         
-            $source = $original_url . $str;
+            $url_for_root = "";
+            
+            // need to explode the string "$str" to go up a directory
+            if (substr($str, 0, 3) == '../')
+            {
+                echo "<br>original_url: " . $original_url;
+                $original_url_explode = explode("/" ,$original_url);
+                $up_dir_count = 0;
+                while(substr($str, 0, 3) == '../')
+                {
+                    $str = str_replace("../","",$str);
+                    $up_dir_count++;
+                }
+                echo "<br> up directory count: " . $up_dir_count;
+                echo "<br> original_url_explode_count: " .count($original_url_explode);
+                
+                for($i=$up_dir_count; $i<count($original_url_explode); $i++)
+                {
+                    $url_for_root .= $original_url_explode[$i] . "/";
+                }
+                
+                echo "<br>new string:". $str . " </br>";
+                echo "new url:". $url_for_root . " </br>";
+            }
+            else
+            {
+                $url_for_root = $original_url;
+            }
+            
+            $source = $url_for_root . $str;
             
             echo "<br> saveto : ". $accum_path;
    
@@ -142,21 +174,77 @@ if( !empty($_POST['data']))
 {
     $url = $_POST['data'];
     $folder_name = "base";
-    $url_explode = multiexplode("/",$url);
-        
-    //print_r($url_explode);
-    $folder_explode = multiexplode(".",$url_explode[2]);
-
-//        print_r($folder_explode);
-        
-    if( count($folder_explode) >= 3)
+    $url_explode = explode("/",$url);
+    print_r($url_explode);
+    
+    // we now need to count the elements *past* [2]
+    
+    $parsed = parse_url($url);
+            $path = $parsed['path'];
+            $host = $parsed['host'];
+            $scheme = $parsed['scheme'];
+    
+    $path_array = explode("/",$path);
+    print_r($path_array);
+    $new_path = "";
+    $path_array_count = count($path_array);
+    if( strpos($path_array[$path_array_count-1],".html") || strpos($path_array[$path_array_count-1],".htm") || strpos($path_array[$path_array_count-1],".php")  )
     {
-        $folder_name = $folder_explode[1];           
+        $new_path = "";
+        
+        for( $i=0; $i<$path_array_count-1;$i++)
+        {
+            $new_path .= $path_array[$i] . "/";
+        }
     }
-    echo $root = $url;//$url_explode[0] . "//" . $folder_explode[0] . "." . $folder_explode[1] . "." . $folder_explode[2] . "/" ;
+    else
+    {
+        $new_path = "";
+        
+        for( $i=0; $i<$path_array_count;$i++)
+        {
+            $new_path .= $path_array[$i] . "/";
+        }        
+    }
+    echo "<br> NEW PATH : ".$new_path;
+    
+    $base = "";    
+    //print_r($url_explode);
+    
+    
+    
+    
+    
+    
+    
+    $folder_explode = explode(".",$url_explode[2]);
+
+
+        
+    $folder_count=count($folder_explode);
+    
+    if( $folder_count >= 3)
+    {
+        $folder_name = $folder_explode[1];
+        //echo "<br>";
+        //echo $base = $url_explode[0] . "//" . $folder_explode[0] . "." . $folder_explode[1] . "." . $folder_explode[2] . "/" ;
+    }
+    else if( $folder_count == 2 )
+    {
+        $folder_name = $folder_explode[0];
+        //echo "<br>";
+        //echo $base = $url_explode[0] . "//" . $folder_explode[0] . "." . $folder_explode[1] . "/" ;
+    }
+    else {
+        echo "<br>strange website name: die";
+        die;
+    }
+    
+    echo $root = $scheme . "://". $host . $new_path;//$url_explode[0] . "//" . $folder_explode[0] . "." . $folder_explode[1] . "." . $folder_explode[2] . "/" ;
     echo "<br>" . $folder_name;
     
-    echo $base = $url_explode[0] . "//" . $folder_explode[0] . "." . $folder_explode[1] . "." . $folder_explode[2] . "/" ;
+    
+    
 
     $ch = curl_init();
     $timeout = 5;
@@ -175,6 +263,14 @@ if( !empty($_POST['data']))
 
     // make some folders
     mkdir($folder_name . "/");
+    mkdir($folder_name . $new_path );
+    $accum_path="";
+    for( $i=0; $i<$path_array_count-1;$i++)
+        {
+            $accum_path .= $path_array[$i] . "/";
+            mkdir($folder_name . "/" . $accum_path);
+        }
+    echo "<br> folder_name: ".$folder_name . $new_path;
     mkdir($folder_name . "/css/");
     mkdir($folder_name . "/images/");
     mkdir($folder_name . "/js/");
@@ -184,10 +280,10 @@ if( !empty($_POST['data']))
        //         $copy_html = preg_replace($root, '', $copy_html);
       //  }
         
-    $copy_html = str_replace($base, '',$copy_html);
+    //$copy_html = str_replace($base, '',$copy_html);
     // NOTE: replace all with web page pattern "http://www.somesite.com, etc"
    
-    $file = fopen($folder_name . "/" .$froot_name, 'w');
+    $file = fopen($folder_name  . $new_path . "/". $froot_name, 'w');
     fwrite($file, $copy_html);
     fclose($file);
 
@@ -197,6 +293,32 @@ if( !empty($_POST['data']))
     // The @ before the method call suppresses any warnings
     @$dom->loadHTML($html);
     
+    /*
+    // check that we don't have to look up a directory anywhere
+    foreach($dom->getElementsByTagName('link') as $lnk) {
+        $str=$lnk->getAttribute('href');
+        if( substr($str,0,3) == '../')
+        {
+            // we are going up a directory, so count how far up we are going thenresave the html
+        }
+    }
+    foreach($dom->getElementsByTagName('img') as $lmg) {
+        $str=$img->getAttribute('src');
+        if( substr($str,0,3) == '../')
+        {
+            // we are going up a directory, so count how far up we are going thenresave the html
+        }
+    }
+    foreach($dom->getElementsByTagName('script') as $scrpt) {
+        $str=$scrpt->getAttribute('src');
+        if( substr($str,0,3) == '../')
+        {
+            // we are going up a directory, so count how far up we are going thenresave the html
+        }
+    }
+    */
+    
+    $folder_name  .= $new_path ;
     echo "</br>"."root: " .$root;
     echo "</br>"."folder name: " .$folder_name;
 
