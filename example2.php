@@ -84,54 +84,73 @@ function grab_element($original_url, $dom, $tagname, $dir_name, $root_dir  )
         }
 
         else {  
+            $parsed = parse_url($original_url);
+            $path = $parsed['path'];
+            $host = $parsed['host'];
+            $scheme = $parsed['scheme'];
+            
+            $explode_host = explode(".", $host);
+            $my_root = "";
+            if( count($explode_host) >= 3){
+                    $my_root = $explode_host[1];// ."/". $the_path;
+                }
+                else
+                {
+                    $my_root = $explode_host[0];// ."/". $the_path;
+                }
+                
+                mkdir($my_root);
             
             $arr = explode("/", $str);
             print_r($arr);
             echo "</br>";
             echo $arr_count = count($arr);
+            $the_path ="";
             // walk through the path array creating directories
-            $accum_path = $root_dir ;
+            $accum_path = $my_root ."/";
      
+            $first_up_count = 0;
             for( $d=0; $d < $arr_count-1; $d++ )
             {
+                if( $arr[$d] == '..' )
+                {
+                    $first_up_count++;
+                    continue;
+                }
                 $accum_path .= $arr[$d]."/";
+                $the_path .= $arr[$d] ."/";
+                
+
                 mkdir($accum_path);
+                mkdir($the_path);
             }
 
             $file_name = $arr[$arr_count-1];
+            
+            
+            
             $accum_path .= $file_name;
         
             $url_for_root = "";
             
             // need to explode the string "$str" to go up a directory
-            if (substr($str, 0, 3) == '../')
-            {
-                echo "<br>original_url: " . $original_url;
-                $original_url_explode = explode("/" ,$original_url);
-                $up_dir_count = 0;
-                while(substr($str, 0, 3) == '../')
-                {
-                    $str = str_replace("../","",$str);
-                    $up_dir_count++;
-                }
-                echo "<br> up directory count: " . $up_dir_count;
-                echo "<br> original_url_explode_count: " .count($original_url_explode);
-                
-                for($i=$up_dir_count; $i<count($original_url_explode); $i++)
-                {
-                    $url_for_root .= $original_url_explode[$i] . "/";
-                }
-                
-                echo "<br>new string:". $str . " </br>";
-                echo "new url:". $url_for_root . " </br>";
-            }
-            else
-            {
-                $url_for_root = $original_url;
-            }
+            $url_for_root .= $scheme . "://" . $host ."/". $the_path;
             
-            $source = $url_for_root . $str;
+            echo " URL FOR ROOT: ( ". $url_for_root . " )";
             
+            
+            $source = $url_for_root . $file_name ;
+            
+            if( $first_up_count != 0)
+            {
+                
+                
+                
+                    $accum_path = $my_root ."/". $the_path .$file_name;
+                
+                
+            }
+                
             echo "<br> saveto : ". $accum_path;
    
             echo "<br><br> FROM : ". $source;            
