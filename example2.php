@@ -299,7 +299,7 @@ if( !empty($_POST['data']))
        //         $copy_html = preg_replace($root, '', $copy_html);
       //  }
         
-    //$copy_html = str_replace($base, '',$copy_html);
+    $copy_html = str_replace($scheme. "://".$host . "/", '',$copy_html);
     // NOTE: replace all with web page pattern "http://www.somesite.com, etc"
    
     $file = fopen($folder_name  . $new_path . "/". $froot_name, 'w');
