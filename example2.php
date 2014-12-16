@@ -105,9 +105,9 @@ function grab_element($original_url, $dom, $tagname, $dir_name, $root_dir  )
             print_r($arr);
             echo "</br>";
             echo $arr_count = count($arr);
-            $the_path ="";
+            $the_path =$path;
             // walk through the path array creating directories
-            $accum_path = $my_root ."/";
+            $accum_path = $my_root ."/" . $path;
      
             $first_up_count = 0;
             for( $d=0; $d < $arr_count-1; $d++ )
@@ -117,6 +117,8 @@ function grab_element($original_url, $dom, $tagname, $dir_name, $root_dir  )
                     $first_up_count++;
                     continue;
                 }
+                
+                
                 $accum_path .= $arr[$d]."/";
                 $the_path .= $arr[$d] ."/";
                 
@@ -129,9 +131,12 @@ function grab_element($original_url, $dom, $tagname, $dir_name, $root_dir  )
             
             
             
-            $accum_path .= $file_name;
+            
         
             $url_for_root = "";
+            
+            echo "THE PATH: " . $the_path . "</br>";
+            echo "THE host: " . $host . "</br>";
             
             // need to explode the string "$str" to go up a directory
             $url_for_root .= $scheme . "://" . $host ."/". $the_path;
@@ -145,11 +150,19 @@ function grab_element($original_url, $dom, $tagname, $dir_name, $root_dir  )
             {
                 
                 
-                
+                $file_name = preg_replace('/\?.*/', '', $file_name);
                     $accum_path = $my_root ."/". $the_path .$file_name;
                 
                 
             }
+            else
+            
+            {
+                $file_name = preg_replace('/\?.*/', '', $file_name);
+                $accum_path .= $file_name;
+            }
+            
+            
                 
             echo "<br> saveto : ". $accum_path;
    
@@ -258,7 +271,7 @@ if( !empty($_POST['data']))
         echo "<br>strange website name: die";
         die;
     }
-    
+    echo "<br>" ;
     echo $root = $scheme . "://". $host . $new_path;//$url_explode[0] . "//" . $folder_explode[0] . "." . $folder_explode[1] . "." . $folder_explode[2] . "/" ;
     echo "<br>" . $folder_name;
     
